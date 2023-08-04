@@ -118,3 +118,72 @@ def accumulate_purchase_columns(report):
     result_columns = pd.DataFrame({'수량': quantity_columns, '비용': price_columns})
     return pd.concat([header_columns, result_columns], axis=1)
 
+
+# 호출: process - create_excel()
+# 동작: 수익, 비용 계산에 필요한 header를 엑셀에 작성
+def append_header(ws, income_report):
+    kinds = income_report['분류'].drop_duplicates().sort_values().tolist()
+    kinds.append('합계')
+    header_index = 1
+    for index, kind in enumerate(kinds, start=1):
+        col_index = index * 2
+        # 분류 및 합계 row 작성
+        ws.merge_cells(start_row=header_index, start_column=col_index, end_row=header_index, end_column=col_index + 1)
+        ws.cell(header_index, col_index, kind)
+        # 수량, 금액 row 작성
+        ws.cell(header_index + 1, col_index, '수량')
+        ws.cell(header_index + 1, col_index + 1, '금액')
+    return
+
+
+# 호출: process - create_excel()
+# 동작: 수익, 비용, 순이익에 대한 종합 데이터를 엑셀에 작성
+def append_income_outcome_net_profit(ws, income_report, outcome_report):
+    income_row = get_income_row(income_report)
+    outcome_row = get_outcome_row(outcome_report)
+    net_profit_row = ['순이익']
+    for i in range(2, len(income_row), 2):
+        net_profit_row.extend(['-', income_row[i] - outcome_row[i]])
+    ws.append(income_row)
+    ws.append(outcome_row)
+    ws.append(net_profit_row)
+    return
+
+
+# 호출: append_income_outcome_net_profit()
+# 동작: 분류별 수익을 row 형태로 반환
+def get_income_row(income_report):
+    row = ['매출']
+    income_values = income_report.astype({'수량': 'int', '수익':'int'})\
+        .groupby(['분류'])\
+        .agg({'수량': 'sum', '수익': 'sum'})\
+        .sort_values(by='분류', ascending=True)
+    for index, val in income_values.iterrows():
+        row.extend([val['수량'], val['수익']])
+    row.extend(get_quantity_and_price_sum(row))
+    return row
+
+
+# 호출: append_income_outcome_net_profit()
+# 동작: 분류별 비용을 row 형태로 반환
+def get_outcome_row(outcome_report):
+    row = ['매입']
+    print(outcome_report)
+    outcome_values = outcome_report.astype({'수량': 'int', '비용': 'int'})\
+        .groupby(['분류'])\
+        .agg({'수량': 'sum', '비용': 'sum'})\
+        .sort_values(by='분류', ascending=True)
+    for index, val in outcome_values.iterrows():
+        row.extend([val['수량'], val['비용']])
+    row.extend(get_quantity_and_price_sum(row))
+    return row
+
+
+# 호출: append_income(), append_outcome()
+# 동작: 수량과 금액의 합을 연산해서 반환
+def get_quantity_and_price_sum(row):
+    amount_sum = sum(row[1::2])
+    price_sum = sum(row[2::2])
+    return [amount_sum, price_sum]
+
+

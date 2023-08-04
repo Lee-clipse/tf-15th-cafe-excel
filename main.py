@@ -7,9 +7,9 @@ def get_interval_report():
     # 수익, 비용 종합 기록 연산
     income_report = process.get_income_report(begin_date, end_date)
     outcome_report = process.get_outcome_report(begin_date, end_date)
-    print(income_report)
-    print()
-    print(outcome_report)
+    # print(income_report)
+    # print()
+    # print(outcome_report)
     # 결과 엑셀 생성
     process.create_excel(income_report, outcome_report, begin_date, end_date)
 

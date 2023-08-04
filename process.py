@@ -54,5 +54,10 @@ def create_excel(income_report, outcome_report, begin_date, end_date):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = begin_date + ' ~ ' + end_date + ' report'
-    # TODO: 여기서부터
+    # 헤더 작성
+    utils.append_header(ws, income_report)
+    # 수익, 비용, 순이익 작성
+    utils.append_income_outcome_net_profit(ws, income_report, outcome_report)
+    wb.save(f"{ws.title}.xlsx")
+    wb.close()
     return

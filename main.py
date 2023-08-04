@@ -2,8 +2,8 @@ import process
 
 
 def get_interval_report():
-    begin_date = '230726'
-    end_date = '230803'
+    begin_date = '230701'
+    end_date = '230804'
     # 수익, 비용 종합 기록 연산
     income_report = process.get_income_report(begin_date, end_date)
     outcome_report = process.get_outcome_report(begin_date, end_date)

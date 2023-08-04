@@ -71,7 +71,7 @@ def get_stock_columns(report):
 # 동작: 입고 column을 추출하여 입고 수량만 값으로 반환
 def get_purchase_columns(report):
     purchase_columns = report\
-        .filter(like='입', axis=1)\
+        .filter(like='입', axis=1) \
         .apply(lambda col: col.apply(lambda val: val.split('/')[0]))
     # add 함수를 사용하기 위해 column index를 변경
     purchase_columns.columns = purchase_columns.columns.str.replace('입', '재')
@@ -171,7 +171,6 @@ def get_income_row(income_report):
 # 동작: 분류별 매입 데이터를 row 형태로 반환
 def get_outcome_row(outcome_report):
     row = ['매입']
-    print(outcome_report)
     outcome_values = outcome_report.astype({'수량': 'int', '비용': 'int'})\
         .groupby(['분류'])\
         .agg({'수량': 'sum', '비용': 'sum'})\

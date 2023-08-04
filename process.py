@@ -56,8 +56,13 @@ def create_excel(income_report, outcome_report, begin_date, end_date):
     ws.title = begin_date + ' ~ ' + end_date + ' report'
     # 헤더 작성
     utils.append_header(ws, income_report)
-    # 수익, 비용, 순이익 작성
+    # 매출, 매입, 순이익 작성
     utils.append_income_outcome_net_profit(ws, income_report, outcome_report)
+    # 상품별 매출 랭킹 헤더 작성
+    utils.append_ranking_header(ws, income_report)
+    # 상품별 매출 랭킹 헤더 작성
+    utils.append_product_ranking(ws, income_report)
+    # 엑셀 저장
     wb.save(f"{ws.title}.xlsx")
     wb.close()
     return

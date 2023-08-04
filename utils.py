@@ -137,13 +137,16 @@ def append_header(ws, income_report):
 
 
 # 호출: process - create_excel()
-# 동작: 수익, 비용, 순이익에 대한 종합 데이터를 엑셀에 작성
+# 동작: 매출, 매입, 순이익에 대한 종합 데이터를 엑셀에 작성
 def append_income_outcome_net_profit(ws, income_report, outcome_report):
+    # 매출, 매입 row 작성
     income_row = get_income_row(income_report)
     outcome_row = get_outcome_row(outcome_report)
+    # 매출, 매입에 대한 순이익 row 작성
     net_profit_row = ['순이익']
     for i in range(2, len(income_row), 2):
         net_profit_row.extend(['-', income_row[i] - outcome_row[i]])
+    # 엑셀에 작성
     ws.append(income_row)
     ws.append(outcome_row)
     ws.append(net_profit_row)
@@ -151,7 +154,7 @@ def append_income_outcome_net_profit(ws, income_report, outcome_report):
 
 
 # 호출: append_income_outcome_net_profit()
-# 동작: 분류별 수익을 row 형태로 반환
+# 동작: 분류별 매출 데이터를 row 형태로 반환
 def get_income_row(income_report):
     row = ['매출']
     income_values = income_report.astype({'수량': 'int', '수익':'int'})\
@@ -165,7 +168,7 @@ def get_income_row(income_report):
 
 
 # 호출: append_income_outcome_net_profit()
-# 동작: 분류별 비용을 row 형태로 반환
+# 동작: 분류별 매입 데이터를 row 형태로 반환
 def get_outcome_row(outcome_report):
     row = ['매입']
     print(outcome_report)
@@ -187,3 +190,27 @@ def get_quantity_and_price_sum(row):
     return [amount_sum, price_sum]
 
 
+# 호출: process - create_excel()
+# 동작: 상품에 대한 매출 랭킹의 헤더를 엑셀에 작성
+def append_ranking_header(ws, income_report):
+    ws.append([])
+    header_row = ['순위']
+    header_row.extend(income_report.columns.to_list())
+    ws.append(header_row)
+    return
+
+
+# 호출: process - create_excel()
+# 동작: 상품에 대한 매출 랭킹을 엑셀에 작성
+def append_product_ranking(ws, income_report):
+    # 상품명 분리
+    income_report['상품명'] = income_report['상품명'].apply(lambda x: x.split('/')[0])
+    # 수익 내림차순 정렬
+    ranking = income_report.astype({'수익': 'int'})\
+        .sort_values(by='수익', ascending=False, ignore_index=True)
+    # 엑셀에 작성
+    for index, rank_row in ranking.iterrows():
+        row = [index + 1]
+        row.extend(rank_row.tolist())
+        ws.append(row)
+    return

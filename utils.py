@@ -36,13 +36,22 @@ def is_include_date(date, begin_date, end_date):
 # 호출: process - get_income_report()
 # 동작: 재고 조사 결과 수량만을 누적, 추출해서 반환
 def accumulate_stock(report):
-    # 입고 수량을 누적해서 재고 수량으로 반환
-    stock_columns = get_stock_columns(report).astype(int)
-    purchase_columns = get_purchase_columns(report).astype(int)
-    stock_columns = stock_columns.add(purchase_columns, fill_value=0).fillna(0).astype(int)
-    # 원래 양식대로 df 구성
-    header_columns = get_header_columns(report)
-    return pd.concat([header_columns, stock_columns], axis=1)
+    # 입고 column에 입고 수량을 기입
+    purchase_columns = report.filter(like='입', axis=1)\
+        .apply(lambda col: col.apply(lambda val: val.split('/')[0]))
+    # 원본 데이터에 삽입
+    for column in purchase_columns.columns:
+        report[column] = purchase_columns[column]
+    # 누적합 연산
+    for i in range(0, report.shape[1]):
+        cur_column_name = report.columns[i]
+        if '입' in cur_column_name:
+            # 입고 column에 대해서는, 이전 column의 수량을 누적
+            prev_column = report[report.columns[i-1]].astype(int)
+            cur_column = report[cur_column_name].astype(int)
+            # 적용
+            report[cur_column_name] = prev_column.add(cur_column).astype(int)
+    return report
 
 
 # 호출: process - get_income_report()
@@ -67,22 +76,22 @@ def get_stock_columns(report):
     return stock_columns
 
 
-# 호출: accumulate_stock()
-# 동작: 입고 column을 추출하여 입고 수량만 값으로 반환
-def get_purchase_columns(report):
-    purchase_columns = report\
-        .filter(like='입', axis=1) \
-        .apply(lambda col: col.apply(lambda val: val.split('/')[0]))
-    # add 함수를 사용하기 위해 column index를 변경
-    purchase_columns.columns = purchase_columns.columns.str.replace('입', '재')
-    return purchase_columns
-
-
 # 호출: process - get_income_report()
 # 동작: 재고에 대해 매출 합 연산을 수행하여 반환
 def sum_income(report):
     header_columns = get_header_columns(report)
-    # 재고 수량 합치기
+    sum_list = []
+    for index, row in report.iterrows():
+        sum_value = calculate_quantity_and_price_by_row(row.to_list())
+        sum_list.append(sum_value)
+    sum_column = pd.DataFrame(sum_list, columns=['합계'])
+    return pd.concat([header_columns, sum_column], axis=1)
+
+
+# 호출: process - get_income_report()
+# 동작: 수제 제작 물품에 대해 매출 합 연산을 수행하여 반환
+def handmade_sum_income(report):
+    header_columns = get_header_columns(report)
     sum_columns = pd.DataFrame([])
     stock_columns = get_stock_columns(report)
     sum_columns['합계'] = stock_columns.sum(axis=1)
@@ -91,6 +100,24 @@ def sum_income(report):
     accumulate_columns['합계'] = accumulate_columns\
         .apply(lambda col: f"{int(col['합계'])}/{col['판매가'] * int(col['합계'])}", axis=1)
     return accumulate_columns
+
+
+# 호출: sum_income()
+# 동작: row를 받아 수량과 가격을 연산하여 반환
+def calculate_quantity_and_price_by_row(row):
+    quantity_begin_index = 3
+    # int 형변환
+    quantity_row = list(map(int, row[quantity_begin_index:]))
+    quantity = 0
+    prev = quantity_row[0]
+    # 차이에 대해 누적 연산으로 수량을 구함
+    for cur in quantity_row[1:]:
+        if cur < prev:
+            quantity += (prev - cur)
+        prev = cur
+    # 판매가랑 곱해서 수익을 구함
+    price = int(row[quantity_begin_index-1])
+    return f"{quantity}/{price * quantity}"
 
 
 # 호출: process - get_income_report()
